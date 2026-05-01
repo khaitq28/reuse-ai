@@ -1,0 +1,17 @@
+# Auto-applied in dev — overrides docker-compose.yml for local development
+services:
+  app:
+    build:
+      target: runtime
+    command:
+      - /bin/bash
+      - -c
+      - |
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app
+    volumes:
+      - ./app:/app/app
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DEBUG: "true"

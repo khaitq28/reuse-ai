@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.idea/
+.vscode/
+tests/
+htmlcov/
+test.db
+*.md
+docker-compose.override.yml
