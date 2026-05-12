@@ -1,0 +1,15 @@
+2024-01-15;192.168.1.10;ERROR;timeout connecting to DB
+2024-01-15;10.0.0.5;INFO;user login successful
+2024-01-15;192.168.1.10;ERROR;timeout connecting to DB
+2024-01-16;172.16.0.3;ERROR;disk full on /var/log
+2024-01-16;10.0.0.5;INFO;user logout
+2024-01-16;192.168.1.22;ERROR;timeout connecting to DB
+2024-01-17;172.16.0.3;ERROR;disk full on /var/log
+2024-01-17;192.168.1.10;ERROR;null pointer exception
+2024-01-17;10.0.0.5;INFO;user login successful
+2024-01-17;192.168.1.22;ERROR;timeout connecting to DB
+2024-01-18;172.16.0.3;ERROR;timeout connecting to DB
+2024-01-18;192.168.1.10;ERROR;disk full on /var/log
+2024-01-18;10.0.0.5;INFO;scheduled job started
+2024-01-18;192.168.1.22;ERROR;null pointer exception
+2024-01-18;192.168.1.10;ERROR;timeout connecting to DB

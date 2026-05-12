@@ -1,0 +1,8 @@
+name;role;status
+john;admin;active
+alice;developer;active
+bob;developer;inactive
+carol;admin;active
+dave;viewer;inactive
+eve;developer;active
+frank;viewer;active
