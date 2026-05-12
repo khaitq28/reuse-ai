@@ -1,0 +1,37 @@
+2572286 node-17 action start 1074126278 1 bootGenvmunix  (command 1903)
+2575909 node-162 action start 1074178193 1 boot  (command 1911)
+2576195 node-181 action start 1074178628 1 boot  (command 1910)
+2599298 node-198 action start 1074297419 1 boot  (command 1978)
+2600743 node-57 action start 1074298084 1 boot  (command 1967)
+2601401 node-184 action start 1074298390 1 wait  (command 1975)
+2612635 node-88 action start 1074535847 1 boot  (command 1999)
+2608062 node-238 action start 1074461014 1 halt  (command 1982)
+2015-07-29 19:13:27,721 - WARN  [RecvWorker:188978561024:QuorumCnxManager$RecvWorker@762] - Connection broken for id 188978561024, my id = 1, error =
+2015-07-29 19:13:34,382 - WARN  [SendWorker:188978561024:QuorumCnxManager$SendWorker@679] - Interrupted while waiting for message on queue
+2015-07-29 19:13:37,626 - WARN  [SendWorker:188978561024:QuorumCnxManager$SendWorker@688] - Send worker leaving thread
+2015-07-29 19:13:44,301 - WARN  [SendWorker:188978561024:QuorumCnxManager$SendWorker@688] - Send worker leaving thread
+
+
+WWWW;2015-07-29;error;messages
+gfd;2015-07-29;error;messages
+rete;2015-07-29;error;messages
+bvcbcv;2015-07-29;error;messages
+22222;2015-07-29;error;messages
+
+IP - STATUS - MESSAGE
+192.168.1.10 - ERROR - timeout
+10.0.0.1 - INFO - started
+hello world
+192.168 - ERROR
+abc.def - INFO - ok
+
+
+john@gmail.com
+abc
+test@yahoo.fr
+hello@
+
+
+INFO User created
+ERROR Database failed
+WARN Timeout
