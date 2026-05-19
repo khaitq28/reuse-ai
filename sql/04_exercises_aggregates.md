@@ -1,5 +1,6 @@
-# 04 — Exercises: Aggregates & GROUP BY
+# 04 — Exercises: Aggregates & GROUP BY  *(PostgreSQL)*
 
+> **DB:** PostgreSQL 16 — run via Docker (see [README](README.md)) or [db-fiddle.com](https://www.db-fiddle.com)
 > Tables: see [01_schema.md](01_schema.md)
 > Covers: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `GROUP BY`, `HAVING`.
 

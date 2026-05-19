@@ -1,4 +1,4 @@
-# 01 — Schema
+# 01 — Schema  *(PostgreSQL)*
 
 ## Entity-Relationship Diagram
 
@@ -90,6 +90,8 @@ COUNTRY (1) ──── (N) LOCATION (1) ──── (N) DEPARTMENT
 ---
 
 ## DDL — Create Tables
+
+> Copy-paste into [db-fiddle.com](https://www.db-fiddle.com) (PostgreSQL 16) or run via Docker — see [README](README.md).
 
 ```sql
 -- 1. COUNTRY

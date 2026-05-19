@@ -1,5 +1,6 @@
-# 05 — Exercises: Subqueries, CTEs & Window Functions
+# 05 — Exercises: Subqueries, CTEs & Window Functions  *(PostgreSQL)*
 
+> **DB:** PostgreSQL 16 — run via Docker (see [README](README.md)) or [db-fiddle.com](https://www.db-fiddle.com)
 > Tables: see [01_schema.md](01_schema.md)
 > Covers: correlated subqueries, `WITH` (CTE), `RANK()`, `ROW_NUMBER()`, `LAG()`.
 

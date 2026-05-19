@@ -1,7 +1,7 @@
-# 02 — Exercises: Basic SELECT & Filtering
+# 02 — Exercises: Basic SELECT & Filtering  *(PostgreSQL)*
 
-> Tables: see [01_schema.md](01_schema.md)
-> No JOINs needed here — single-table queries only.
+> **DB:** PostgreSQL 16 — run via Docker (see [README](README.md)) or [db-fiddle.com](https://www.db-fiddle.com)
+> Tables: see [01_schema.md](01_schema.md) — no JOINs needed here, single-table queries only.
 
 ---
 

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres-hr
+    environment:
+      POSTGRES_USER: hr123
+      POSTGRES_PASSWORD: hr123
+      POSTGRES_DB: hrdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d   # scripts run once on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hr -d hrdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

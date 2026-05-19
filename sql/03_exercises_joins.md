@@ -1,5 +1,6 @@
-# 03 — Exercises: JOINs
+# 03 — Exercises: JOINs  *(PostgreSQL)*
 
+> **DB:** PostgreSQL 16 — run via Docker (see [README](README.md)) or [db-fiddle.com](https://www.db-fiddle.com)
 > Tables: see [01_schema.md](01_schema.md)
 > Covers: `INNER JOIN`, `LEFT JOIN`, multi-table chains, self-join.
 
