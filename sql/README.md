@@ -21,6 +21,7 @@ See full schema, ERD diagram, DDL, and sample data → [01_schema.md](01_schema.
 | [03_exercises_joins.md](03_exercises_joins.md)           | 5 – 8   | INNER JOIN chain, self-join, LEFT JOIN, job_history |
 | [04_exercises_aggregates.md](04_exercises_aggregates.md) | 9 – 12  | MIN / MAX / AVG, HAVING, multi-level GROUP BY |
 | [05_exercises_advanced.md](05_exercises_advanced.md)     | 13 – 15 | Correlated subquery, CTE + RANK(), LAG() |
+| [06_exercises_joins_agg.md](06_exercises_joins_agg.md)   | 16 – 23 | JOINs + aggregates mixed, self-join pairs, LEFT JOIN anti-pattern |
 
 ---
 
@@ -80,8 +81,9 @@ Paste the DDL + data from `01_schema.md` directly into:
 ## Example 
 
 ```sql
+
 select round(avg(e.salary),0), d.department_name from employee e
-    inner join department d on e.department_id = d.department_id
+                                                          inner join department d on e.department_id = d.department_id
 group by e.department_id, d.department_name;
 
 
@@ -100,7 +102,7 @@ select * from job;
 --job_title	min_sal	max_sal	avg_sal
 
 select j.job_title, min(e.salary), max(e.salary), avg(e.salary) from employee e
-inner join job j on e.job_id = j.job_id
+                                                                         inner join job j on e.job_id = j.job_id
 group by j.job_title;
 
 
@@ -109,24 +111,45 @@ group by j.job_title;
 
 select round(avg(e.salary),1) as sal, d.department_name as dep, l.city
 from employee e inner join public.department d on e.department_id = d.department_id
-join location l on l.location_id = d.location_id
+                join location l on l.location_id = d.location_id
 group by d.department_name, l.city
 having avg(e.salary) > (select avg(salary) from employee)
 
 
 select count(employee_id), d.department_name from employee e
-inner join department d on e.department_id = d.department_id
+                                                      inner join department d on e.department_id = d.department_id
 group by d.department_name having count(employee_id) > 2
 
 --Aggregate all the way up: sum every employee's salary, grouped by country.
 -- country_name	total_salary	nb_employees
 select  c.country_name, avg(salary), count(*) from employee e
-inner join department d on e.department_id = d.department_id
-inner join location l on d.location_id = l.location_id
-inner join public.country c on l.country_id = c.country_id
+                                                       inner join department d on e.department_id = d.department_id
+                                                       inner join location l on d.location_id = l.location_id
+                                                       inner join public.country c on l.country_id = c.country_id
 group by c.country_id
 
---Find employees whose salary is strictly above the average salary of their department.
--- Show employee name, department, their salary, and the department average.
+--How many employees does each manager have?
+select count(e.employee_id), man.first_name || ' ' || man.last_name from employee e
+                                                                             inner join employee man on e.manager_id = man.employee_id
+group by man.manager_id, man.first_name, man.last_name;
+
+-- Employees whose salary exceeds their job's max_salary
+
+select e.salary, j.max_salary, e.first_name,e.last_name from employee e
+                                                                 inner join public.job j on j.job_id = e.job_id
+where e.salary > j.max_salary
+
+--Number of employees per country
+select count(e.employee_id), c.country_name from employee e
+                                                     inner join public.department d on e.department_id = d.department_id
+                                                     inner join public.location l on l.location_id = d.location_id
+                                                     inner join public.country c on c.country_id = l.country_id
+group by c.country_id
+
+--Departments where the lowest salary is below 60 000
+select d.department_name, min(e.salary) from employee e
+                                                 inner join public.department d on e.department_id = d.department_id
+group by d.department_id
+having min(e.salary) < 60000
 
 ```
