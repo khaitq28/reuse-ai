@@ -44,12 +44,12 @@ docker logs -f postgres-hr
 | Host | `localhost` |
 | Port | `5432` |
 | Database | `hrdb` |
-| User | `hr` |
+| User | `hr123` |
 | Password | `hr123` |
 
 **Connect via psql inside the container:**
 ```bash
-docker exec -it postgres-hr psql -U hr -d hrdb
+docker exec -it postgres-hr psql -U hr123 -d hrdb
 ```
 
 **Useful psql commands once connected:**
@@ -75,3 +75,58 @@ docker compose down -v       # stop + wipe all data (re-runs init scripts on nex
 Paste the DDL + data from `01_schema.md` directly into:
 - [db-fiddle.com](https://www.db-fiddle.com) — choose **PostgreSQL 16**, no changes needed
 - [sqlfiddle.com](http://sqlfiddle.com) — choose **PostgreSQL**
+
+
+## Example 
+
+```sql
+select round(avg(e.salary),0), d.department_name from employee e
+    inner join department d on e.department_id = d.department_id
+group by e.department_id, d.department_name;
+
+
+
+select count(e.employee_id), m.first_name || ' ' || m.last_name as manager
+from employee e join employee m on e.manager_id = m.employee_id
+group by e.manager_id, m.first_name, m.last_name;
+
+select * from employee where manager_id is null;
+
+select count(*), manager_id from employee group by manager_id having manager_id is not null;
+
+select * from employee;
+select * from job;
+
+--job_title	min_sal	max_sal	avg_sal
+
+select j.job_title, min(e.salary), max(e.salary), avg(e.salary) from employee e
+inner join job j on e.job_id = j.job_id
+group by j.job_title;
+
+
+-- departments whose average employee salary is above the overall company average.
+-- Show department name, city, and the average salary.
+
+select round(avg(e.salary),1) as sal, d.department_name as dep, l.city
+from employee e inner join public.department d on e.department_id = d.department_id
+join location l on l.location_id = d.location_id
+group by d.department_name, l.city
+having avg(e.salary) > (select avg(salary) from employee)
+
+
+select count(employee_id), d.department_name from employee e
+inner join department d on e.department_id = d.department_id
+group by d.department_name having count(employee_id) > 2
+
+--Aggregate all the way up: sum every employee's salary, grouped by country.
+-- country_name	total_salary	nb_employees
+select  c.country_name, avg(salary), count(*) from employee e
+inner join department d on e.department_id = d.department_id
+inner join location l on d.location_id = l.location_id
+inner join public.country c on l.country_id = c.country_id
+group by c.country_id
+
+--Find employees whose salary is strictly above the average salary of their department.
+-- Show employee name, department, their salary, and the department average.
+
+```

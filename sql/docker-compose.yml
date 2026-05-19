@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d   # scripts run once on first start
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hr -d hrdb"]
+      test: ["CMD-SHELL", "pg_isready -U hr123 -d hrdb"]
       interval: 5s
       timeout: 5s
       retries: 10
