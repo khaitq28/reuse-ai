@@ -14,7 +14,12 @@
       "Bash(python3 -m json.tool)",
       "Bash(curl -s http://localhost:8000/api/v1/health 2)",
       "Bash(curl -s -X POST http://localhost:8000/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@admin.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"admin\"\"\"\"}')",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python -c \"import matplotlib; print\\(''matplotlib ok''\\)\")",
+      "Bash(python -c \"import graphviz; print\\(''graphviz ok''\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import matplotlib; print\\(''ok''\\)\")",
+      "Bash(python generate_schema.py)"
     ]
   }
 }
