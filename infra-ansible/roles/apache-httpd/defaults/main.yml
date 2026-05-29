@@ -1,0 +1,5 @@
+---
+# roles/apache-httpd/defaults/main.yml
+httpd_ssl_cert_dest: "/etc/httpd/ssl/server.crt"
+httpd_ssl_key_dest:  "/etc/httpd/ssl/server.key"
+app_port: 8080

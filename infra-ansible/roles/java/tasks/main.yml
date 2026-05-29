@@ -1,0 +1,44 @@
+---
+# roles/java/tasks/main.yml
+# Installs OpenJDK 21 — handles Amazon Linux 2023 (Corretto) and Rocky Linux 9 (OpenJDK)
+
+- name: Install Java 21 on Amazon Linux (Corretto)
+  ansible.builtin.dnf:
+    name: java-21-amazon-corretto-headless
+    state: present
+  become: true
+  when: ansible_distribution == "Amazon"
+
+- name: Install Java 21 on Rocky/RHEL Linux (OpenJDK)
+  ansible.builtin.yum:
+    name: java-21-openjdk
+    state: present
+  become: true
+  when: ansible_distribution != "Amazon"
+
+- name: Verify Java installation
+  ansible.builtin.command: java -version
+  register: java_version_output
+  changed_when: false
+
+- name: Print Java version
+  ansible.builtin.debug:
+    msg: "Java installed: {{ java_version_output.stderr }}"
+
+- name: Set JAVA_HOME in /etc/environment (Amazon Linux)
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: "^JAVA_HOME="
+    line: "JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto"
+    state: present
+  become: true
+  when: ansible_distribution == "Amazon"
+
+- name: Set JAVA_HOME in /etc/environment (Rocky/RHEL)
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: "^JAVA_HOME="
+    line: "JAVA_HOME=/usr/lib/jvm/jre-21-openjdk"
+    state: present
+  become: true
+  when: ansible_distribution != "Amazon"

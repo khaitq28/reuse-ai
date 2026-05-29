@@ -1,0 +1,13 @@
+---
+# group_vars/uat.yml
+java_version: "21"
+java_package: "java-21-openjdk"
+
+httpd_ssl_cert_src: "files/certs/uat/server.crt"
+httpd_ssl_key_src:  "files/certs/uat/server.key"
+httpd_ssl_cert_dest: "/etc/httpd/ssl/server.crt"
+httpd_ssl_key_dest:  "/etc/httpd/ssl/server.key"
+
+app_service_name: "myapp"
+app_jar_dir: "/opt/myapp"
+app_user: "myapp"

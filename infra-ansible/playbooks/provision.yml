@@ -1,0 +1,20 @@
+---
+# playbooks/provision.yml
+# Main provisioning playbook — runs all three roles in order.
+#
+# Usage:
+#   ansible-playbook playbooks/provision.yml -i inventory/dev.yml
+#   ansible-playbook playbooks/provision.yml -i inventory/dev.yml --limit dev-app-02
+#
+# The "--limit" flag restricts execution to a single host (useful when adding one new server).
+
+- name: Provision application server
+  hosts: all           # "all" = every host defined in the inventory file passed via -i
+  gather_facts: true   # Ansible collects OS info first (distro, arch, etc.) — used by roles
+  vars_files:
+    - "../group_vars/{{ env_name }}.yml"
+
+  roles:
+    - role: java          # Step 1: Install Java 21
+    - role: apache-httpd  # Step 2: Install HTTPD, copy cert, configure HTTPS vhost
+    - role: app-service   # Step 3: Create OS user, app dir, systemd service unit

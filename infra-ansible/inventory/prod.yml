@@ -1,0 +1,21 @@
+---
+# inventory/prod.yml
+# Prod has two servers — Ansible will provision both in parallel
+all:
+  children:
+    prod:
+      hosts:
+        prod-app-01:
+          ansible_host: 192.168.30.10
+          ansible_user: deploy
+          ansible_port: 22
+          ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+          app_domain: api.myapp.com
+          app_port: 8080
+        prod-app-02:
+          ansible_host: 192.168.30.11
+          ansible_user: deploy
+          ansible_port: 22
+          ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+          app_domain: api.myapp.com
+          app_port: 8080

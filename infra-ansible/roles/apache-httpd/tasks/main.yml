@@ -1,0 +1,61 @@
+---
+# roles/apache-httpd/tasks/main.yml
+# Installs Apache HTTPD with mod_ssl, copies SSL certificate,
+# configures a virtual host that terminates HTTPS and proxies to the Spring Boot app.
+
+- name: Install Apache HTTPD and mod_ssl
+  ansible.builtin.dnf:
+    name:
+      - httpd
+      - mod_ssl
+    state: present
+  become: true
+
+- name: Create SSL certificate directory
+  ansible.builtin.file:
+    path: /etc/httpd/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  become: true
+
+- name: Copy SSL certificate to server
+  ansible.builtin.copy:
+    src: "{{ httpd_ssl_cert_src }}"     # local path on Ansible control node
+    dest: "{{ httpd_ssl_cert_dest }}"   # /etc/httpd/ssl/server.crt on remote server
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart HTTPD                 # triggers the handler below if file changed
+
+- name: Copy SSL private key to server
+  ansible.builtin.copy:
+    src: "{{ httpd_ssl_key_src }}"
+    dest: "{{ httpd_ssl_key_dest }}"
+    owner: root
+    group: root
+    mode: "0600"                        # private key: only root can read
+  become: true
+  notify: Restart HTTPD
+
+- name: Deploy HTTPS virtual host config (from template)
+  ansible.builtin.template:
+    src: vhost-ssl.conf.j2              # Jinja2 template in roles/apache-httpd/templates/
+    dest: /etc/httpd/conf.d/myapp-ssl.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart HTTPD
+
+- name: Reload systemd daemon
+  ansible.builtin.command: systemctl daemon-reload
+  become: true
+  changed_when: false
+
+- name: Enable and start HTTPD service
+  ansible.builtin.command: systemctl enable --now httpd
+  become: true
+  changed_when: false

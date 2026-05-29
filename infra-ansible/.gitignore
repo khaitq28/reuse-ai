@@ -1,0 +1,9 @@
+# Never commit private keys
+files/certs/**/*.key
+*.pem
+
+# Ansible retry files
+*.retry
+
+# Vault password file (if used locally)
+.vault_pass

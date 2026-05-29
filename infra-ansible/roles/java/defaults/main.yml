@@ -1,0 +1,6 @@
+---
+# roles/java/defaults/main.yml
+# Default values — overridden by group_vars/dev.yml, group_vars/uat.yml, etc.
+
+java_version: "21"
+java_package: "java-21-openjdk"

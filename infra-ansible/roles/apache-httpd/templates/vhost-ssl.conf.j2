@@ -1,0 +1,36 @@
+# vhost-ssl.conf.j2
+# Jinja2 template — variables in braces are replaced by Ansible at runtime.
+# This file is rendered per-host, so each server gets the correct domain/port.
+
+# Redirect plain HTTP to HTTPS
+<VirtualHost *:80>
+    ServerName {{ app_domain }}
+    Redirect permanent / https://{{ app_domain }}/
+</VirtualHost>
+
+# HTTPS virtual host — terminates TLS, proxies to Spring Boot
+<VirtualHost *:443>
+    ServerName {{ app_domain }}
+
+    # SSL / TLS configuration
+    SSLEngine on
+    SSLCertificateFile    {{ httpd_ssl_cert_dest }}
+    SSLCertificateKeyFile {{ httpd_ssl_key_dest }}
+
+    # Recommended modern TLS settings
+    SSLProtocol           all -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite        HIGH:!aNULL:!MD5
+    SSLHonorCipherOrder   on
+
+    # Proxy all requests to the Spring Boot app running on localhost
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:{{ app_port }}/
+    ProxyPassReverse / http://127.0.0.1:{{ app_port }}/
+
+    # Forward real client IP to the Spring Boot app
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Forwarded-Port  "443"
+
+    ErrorLog  /var/log/httpd/{{ app_domain }}_error.log
+    CustomLog /var/log/httpd/{{ app_domain }}_access.log combined
+</VirtualHost>

@@ -1,0 +1,9 @@
+---
+# roles/apache-httpd/handlers/main.yml
+# Handlers only run when "notified" by a task — and only once, at the end of the play.
+# This prevents multiple restarts if both the cert AND the config changed.
+
+- name: Restart HTTPD
+  ansible.builtin.command: systemctl restart httpd
+  become: true
+  changed_when: false

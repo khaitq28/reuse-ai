@@ -1,0 +1,6 @@
+---
+app_service_name: "myapp"
+app_jar_dir: "/opt/myapp"
+app_user: "myapp"
+app_port: 8080
+env_name: "dev"

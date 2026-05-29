@@ -1,0 +1,22 @@
+[Unit]
+Description=MyApp Spring Boot Service ({{ app_domain }})
+After=network.target
+
+[Service]
+User={{ app_user }}
+WorkingDirectory={{ app_jar_dir }}
+ExecStart=/usr/bin/java -jar {{ app_jar_dir }}/app.jar --server.port={{ app_port }}
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+# Environment variables the app can read at runtime
+Environment="SPRING_PROFILES_ACTIVE={{ env_name }}"
+Environment="JAVA_OPTS=-Xms256m -Xmx512m"
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier={{ app_service_name }}
+
+[Install]
+WantedBy=multi-user.target

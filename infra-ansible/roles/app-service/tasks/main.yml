@@ -1,0 +1,42 @@
+---
+# roles/app-service/tasks/main.yml
+# Creates the OS user, directory structure, and systemd service
+# that will later run the Spring Boot JAR (deployed by Jenkins separately).
+
+- name: Create dedicated app OS user (no login shell)
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    shell: /sbin/nologin      # security: this user cannot SSH in
+    system: true
+    create_home: false
+  become: true
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: "{{ app_jar_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+  become: true
+
+- name: Deploy systemd service unit file (from template)
+  ansible.builtin.template:
+    src: app.service.j2
+    dest: "/etc/systemd/system/{{ app_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload systemd
+
+- name: Reload systemd daemon
+  ansible.builtin.command: systemctl daemon-reload
+  become: true
+  changed_when: false
+
+- name: Enable service (so it starts on reboot)
+  ansible.builtin.command: systemctl enable "{{ app_service_name }}"
+  become: true
+  changed_when: false
+  # NOTE: We enable but do NOT start here — Jenkins will start it after deploying the JAR.

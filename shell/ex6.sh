@@ -19,3 +19,4 @@ LOG_FILE="errors.log"
 #         INFO  : X
 #         Total : X   (ERROR_COUNT + INFO_COUNT)
 
+

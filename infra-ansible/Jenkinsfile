@@ -1,0 +1,72 @@
+// Jenkinsfile — infra-ansible
+// Triggered manually from Jenkins UI with parameters.
+// Jenkins must have:
+//   - Ansible plugin installed
+//   - Credential "ansible-ssh-key" (SSH Username with private key, username = deploy)
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'ENV',
+            choices: ['dev', 'uat', 'prod'],
+            description: 'Target environment to provision'
+        )
+        string(
+            name: 'LIMIT_HOST',
+            defaultValue: '',
+            description: 'Limit to a single host (e.g. dev-app-02). Leave empty to run on ALL hosts in the inventory.'
+        )
+    }
+
+    environment {
+        // This tells Ansible not to prompt for host key confirmation on first connect.
+        // In production, prefer adding host keys to known_hosts beforehand.
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Jenkins automatically checks out this repo since this Jenkinsfile is in it.
+                echo "Provisioning environment: ${params.ENV}"
+                echo "Target host: ${params.LIMIT_HOST ?: 'ALL hosts in inventory'}"
+            }
+        }
+
+        stage('Provision') {
+            steps {
+                // sshagent loads the SSH private key into the SSH agent for this block.
+                // "ansible-ssh-key" is the ID of the credential stored in Jenkins.
+                // Ansible will use this key automatically when SSHing into servers.
+                sshagent(credentials: ['ansible-ssh-key']) {
+                    script {
+                        def limitFlag = params.LIMIT_HOST?.trim()
+                            ? "--limit ${params.LIMIT_HOST}"
+                            : ''
+
+                        // ssh_key_path is passed as extra-var so inventory files
+                        // can reference {{ ssh_key_path }} if needed.
+                        sh """
+                            ansible-playbook playbooks/provision.yml \\
+                                -i inventory/${params.ENV}.yml \\
+                                ${limitFlag} \\
+                                --extra-vars "env_name=${params.ENV} ssh_key_path=\$SSH_AUTH_SOCK" \\
+                                -v
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Provisioning complete for ${params.ENV} — ${params.LIMIT_HOST ?: 'all hosts'}"
+        }
+        failure {
+            echo "Provisioning FAILED. Check the Ansible output above for details."
+        }
+    }
+}

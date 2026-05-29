@@ -1,0 +1,16 @@
+---
+# group_vars/dev.yml
+# Variables applied to ALL hosts in the "dev" inventory group.
+# Override role defaults for this environment.
+
+java_version: "21"
+java_package: "java-21-openjdk"
+
+httpd_ssl_cert_src: "{{ playbook_dir }}/../files/certs/dev/server.crt"
+httpd_ssl_key_src:  "{{ playbook_dir }}/../files/certs/dev/server.key"
+httpd_ssl_cert_dest: "/etc/httpd/ssl/server.crt"
+httpd_ssl_key_dest:  "/etc/httpd/ssl/server.key"
+
+app_service_name: "myapp"
+app_jar_dir: "/opt/myapp"
+app_user: "myapp"

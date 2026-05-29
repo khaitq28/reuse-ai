@@ -1,0 +1,22 @@
+---
+# inventory/dev.yml
+# DEV environment — servers in this group will be targeted when ENV=dev
+#
+# ansible_host       : the actual IP address Ansible SSHes into
+# ansible_user       : the OS user Ansible logs in as (must exist on server)
+# ansible_port       : SSH port (default 22)
+# ansible_ssh_private_key_file : path to the private key ON THE ANSIBLE CONTROL NODE
+#   In Jenkins this is injected at runtime via the "SSH Agent" plugin
+#   (see Jenkinsfile / README for details)
+
+all:
+  children:
+    dev:
+      hosts:
+        dev-app-01:
+          ansible_host: 192.168.10.10
+          ansible_user: deploy
+          ansible_port: 22
+          ansible_ssh_private_key_file: "{{ ssh_key_path }}"   # injected by Jenkins
+          app_domain: api-dev.myapp.internal
+          app_port: 8080
