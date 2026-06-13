@@ -1,0 +1,15 @@
+package api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling
+public class KeyValueStoreApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(KeyValueStoreApplication.class, args);
+    }
+
+}
