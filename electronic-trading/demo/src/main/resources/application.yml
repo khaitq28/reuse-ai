@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: electronic-trading
+
+# ── Risk limits — override these per environment ──────────────────────────────
+# In a real bank these values live in a risk management database and are
+# hot-reloaded via Spring Cloud Config or a feature-flag service.
+trading:
+  risk:
+    max-notional-per-order: 1_000_000   # USD — fat-dollar check
+    max-position-per-symbol: 100_000    # shares — long or short
+    max-price-deviation-pct: 0.10       # 10% fat-finger threshold
+    max-orders-per-second: 100          # rate limit
+
+# ── Actuator — expose health, info, and metrics endpoints ─────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── Logging ────────────────────────────────────────────────────────────────────
+logging:
+  level:
+    com.trading: DEBUG

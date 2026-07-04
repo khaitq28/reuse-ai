@@ -8,46 +8,58 @@ import com.trading.demo.model.Trade;
 import com.trading.demo.risk.RiskEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Order Management System (OMS).
+ * Order Management System (OMS) — Spring-managed singleton.
  *
  * Responsibilities:
- *   - Accept new orders from clients/strategies
- *   - Run pre-trade risk checks
- *   - Submit to the matching engine (OrderBook)
- *   - Track order state and positions
- *   - Notify listeners on fills and rejections
+ *   - Accept new orders from REST clients / strategies
+ *   - Run pre-trade risk checks via {@link RiskEngine}
+ *   - Route to the matching engine ({@link OrderBook})
+ *   - Track live order state and net positions
+ *   - Notify listeners on fills / rejections
  *
- * This demo uses a simple synchronous model.
- * In production: event loop + Disruptor ring buffer for lock-free processing.
+ * Thread-safety: ConcurrentHashMap for order/book storage;
+ * RiskEngine uses AtomicLong for position and rate-limit counters.
  */
+@Service
 public class OrderManagementSystem {
 
     private static final Logger log = LoggerFactory.getLogger(OrderManagementSystem.class);
 
-    private final ConcurrentHashMap<Long, Order>   orders    = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, OrderBook> books = new ConcurrentHashMap<>();
-    private final RiskEngine riskEngine = new RiskEngine();
+    private final RiskEngine riskEngine;
+
+    private final ConcurrentHashMap<Long, Order>        orders = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, OrderBook>  books  = new ConcurrentHashMap<>();
 
     private ExecutionListener listener = (order, trades) -> {};
+
+    /** Spring constructor injection — RiskEngine is a @Component. */
+    public OrderManagementSystem(RiskEngine riskEngine) {
+        this.riskEngine = riskEngine;
+    }
 
     public void setExecutionListener(ExecutionListener listener) {
         this.listener = listener;
     }
 
+    // ------------------------------------------------------------------
+    // Core operations
+    // ------------------------------------------------------------------
+
     /**
-     * Submit a new order.
-     * Returns the order (check status for REJECTED or active).
+     * Submit a new order through risk checks and into the matching engine.
+     * Returns the order with its updated status (ACCEPTED, PARTIALLY_FILLED, FILLED, or REJECTED).
      */
     public Order submitOrder(Order order) {
         log.info("SUBMIT  {}", order);
         orders.put(order.getOrderId(), order);
 
-        // Pre-trade risk check
+        // Pre-trade risk gate
         RiskEngine.RiskResult risk = riskEngine.check(order);
         if (!risk.isPassed()) {
             order.reject(risk.getRejectReason());
@@ -58,11 +70,11 @@ public class OrderManagementSystem {
 
         order.setStatus(OrderStatus.ACCEPTED);
 
-        // Route to order book (matching engine)
+        // Route to order book (CLOB matching engine)
         OrderBook book = books.computeIfAbsent(order.getSymbol(), OrderBook::new);
         List<Trade> trades = book.addOrder(order);
 
-        // Update positions on fills
+        // Update risk engine positions on each fill
         for (Trade t : trades) {
             riskEngine.updatePosition(order.getSymbol(), order.getSide(), t.getQuantity());
             log.info("TRADE   {}", t);
@@ -88,27 +100,25 @@ public class OrderManagementSystem {
         return true;
     }
 
+    // ------------------------------------------------------------------
+    // Queries
+    // ------------------------------------------------------------------
+
+    public Order     getOrder(long orderId)   { return orders.get(orderId); }
+    public OrderBook getBook(String symbol)   { return books.get(symbol); }
+    public long      getPosition(String symbol) { return riskEngine.getPosition(symbol); }
+
     public void updateMarketPrice(String symbol, double price) {
         riskEngine.updateMarketPrice(symbol, price);
-    }
-
-    public Order getOrder(long orderId) {
-        return orders.get(orderId);
-    }
-
-    public OrderBook getBook(String symbol) {
-        return books.get(symbol);
-    }
-
-    public long getPosition(String symbol) {
-        return riskEngine.getPosition(symbol);
     }
 
     public void printAllBooks() {
         books.values().forEach(b -> b.printBook(5));
     }
 
-    // --- Listener interface ---
+    // ------------------------------------------------------------------
+    // Listener
+    // ------------------------------------------------------------------
 
     @FunctionalInterface
     public interface ExecutionListener {

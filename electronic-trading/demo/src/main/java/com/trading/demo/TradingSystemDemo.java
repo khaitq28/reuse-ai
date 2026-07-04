@@ -7,6 +7,7 @@ import com.trading.demo.model.Order;
 import com.trading.demo.model.OrderType;
 import com.trading.demo.model.Side;
 import com.trading.demo.model.Trade;
+import com.trading.demo.risk.RiskEngine;
 import com.trading.demo.service.OrderManagementSystem;
 import com.trading.demo.util.LatencyTimer;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public class TradingSystemDemo {
     static void demo1_BasicOrderLifecycle() {
         System.out.println("--- DEMO 1: Basic Order Lifecycle ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         oms.updateMarketPrice("AAPL", 150.00);
 
         // Limit buy order — rests in book (no matching sell yet)
@@ -75,7 +76,7 @@ public class TradingSystemDemo {
     static void demo2_OrderBookMatching() {
         System.out.println("--- DEMO 2: Order Book Matching ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         oms.updateMarketPrice("MSFT", 300.00);
 
         // Build up the book with multiple price levels
@@ -108,7 +109,7 @@ public class TradingSystemDemo {
     static void demo3_RiskChecks() {
         System.out.println("--- DEMO 3: Pre-Trade Risk Checks ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         oms.updateMarketPrice("TSLA", 200.00);
 
         // Fat finger: price 50% away from market
@@ -135,7 +136,7 @@ public class TradingSystemDemo {
     static void demo4_MarketMaking() {
         System.out.println("--- DEMO 4: Market Making ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         MarketMaker mm = new MarketMaker(oms, "GOOGL", 0.25, 100);
 
         // Market maker quotes around a series of mid-price updates
@@ -166,7 +167,7 @@ public class TradingSystemDemo {
     static void demo5_DisruptorPipeline() throws InterruptedException {
         System.out.println("--- DEMO 5: LMAX Disruptor Order Pipeline ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         oms.updateMarketPrice("AMZN", 180.00);
 
         DisruptorOrderPipeline pipeline = new DisruptorOrderPipeline(oms);
@@ -193,7 +194,7 @@ public class TradingSystemDemo {
     static void demo6_LatencyMeasurement() {
         System.out.println("--- DEMO 6: Order Processing Latency ---");
 
-        OrderManagementSystem oms = new OrderManagementSystem();
+        OrderManagementSystem oms = new OrderManagementSystem(new RiskEngine());
         oms.updateMarketPrice("SPY", 500.00);
 
         LatencyTimer timer = new LatencyTimer(1000);
