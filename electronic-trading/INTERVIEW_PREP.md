@@ -1376,6 +1376,9 @@ ExcerptTailer tailer = queue.createTailer();
 
 **What they test:** Do you reach for `synchronized` (correct but suboptimal) or `AtomicLong` (correct and fast)?
 
+<details>
+<summary>▶ Solution</summary>
+
 ```java
 // Version 1 — synchronized (correct, but blocks threads)
 public class OrderIdGenerator {
@@ -1411,6 +1414,8 @@ public class OrderIdGenerator {
 }
 ```
 
+</details>
+
 **Key point to say:** "In a trading system I'd prefer `AtomicLong` for a shared generator, but ideally each thread owns its own generator to avoid any synchronization on the hot path."
 
 ---
@@ -1436,8 +1441,10 @@ public class PositionTracker {
 }
 ```
 
-**Answer — identify 3 problems:**
+<details>
+<summary>▶ Answer — 3 problems + fix</summary>
 
+**Problems:**
 ```
 Problem 1: HashMap is not thread-safe at all.
   - Concurrent puts can corrupt the internal array (infinite loop in Java 7, data loss in Java 8+)
@@ -1453,7 +1460,6 @@ Problem 3: Boxed Long → unboxing → NullPointerException risk if map returns 
 ```
 
 **Correct fix:**
-
 ```java
 public class PositionTracker {
     // ConcurrentHashMap + AtomicLong per symbol = lock-free, correct
@@ -1472,6 +1478,8 @@ public class PositionTracker {
 }
 ```
 
+</details>
+
 ---
 
 #### Exercise 3 — Implement a Bounded Blocking Queue (from scratch)
@@ -1479,6 +1487,9 @@ public class PositionTracker {
 **Problem:** "Implement a thread-safe bounded queue with `put()` (blocks if full) and `take()` (blocks if empty). Do NOT use `java.util.concurrent`."
 
 **What they test:** `wait()` / `notifyAll()` mechanics, monitor pattern, producer-consumer.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class BoundedQueue<T> {
@@ -1522,6 +1533,8 @@ public class BoundedQueue<T> {
 }
 ```
 
+</details>
+
 **Follow-up they will ask:** "Why `while` and not `if` around `wait()`?"
 → Because of **spurious wakeups** — a thread can be woken up by the JVM without `notifyAll()` being called. You must re-check the condition after every wakeup.
 
@@ -1535,6 +1548,9 @@ public class BoundedQueue<T> {
 **Problem:** "Implement a simple single-producer, single-consumer ring buffer for passing orders between threads. No blocking, no locking."
 
 **What they test:** Understanding of lock-free design, power-of-2 indexing, `volatile` for visibility.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class OrderRingBuffer {
@@ -1577,6 +1593,8 @@ public class OrderRingBuffer {
 }
 ```
 
+</details>
+
 **Key points to explain:**
 - `size & mask` instead of `size % capacity` — bitwise AND is ~1 CPU cycle vs integer divide (~20–40 cycles)
 - `volatile` on sequence numbers provides the happens-before guarantee — no `synchronized` needed
@@ -1589,6 +1607,9 @@ public class OrderRingBuffer {
 **Problem:** "You have a concurrent order map. How do you implement cancel so that you never cancel an already-filled order, without using `synchronized`?"
 
 **What they test:** CAS, `AtomicReference`, state machine thinking.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public enum OrderStatus { NEW, ACCEPTED, FILLED, CANCELLED }
@@ -1623,6 +1644,8 @@ public class Order {
 // Result: fill wins, cancel correctly rejected
 ```
 
+</details>
+
 ---
 
 ### CATEGORY B — Data Structures & Algorithms
@@ -1645,7 +1668,8 @@ public class OrderBook {
 }
 ```
 
-**Clean solution (what interviewers expect):**
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class OrderBook {
@@ -1742,6 +1766,8 @@ public class OrderBook {
 }
 ```
 
+</details>
+
 **Complexity to state out loud:**
 - `addOrder`: O(k log n) where k = number of levels crossed, n = levels in book
 - `cancelOrder`: O(n) at the price level — mention you'd use a `HashSet` or doubly-linked list for O(1)
@@ -1758,6 +1784,9 @@ public class OrderBook {
 > **What is VWAP (no finance knowledge needed):**
 > `VWAP = sum(price × qty) / sum(qty)` — the average price weighted by trade size.
 > Used by traders to measure execution quality: "did I buy below VWAP?" = good execution.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class RollingVwap {
@@ -1811,6 +1840,8 @@ vwap.update(101.0, 30);   // VWAP = (1000 + 2040 + 3030) / 60 = 101.17
 vwap.update(105.0, 10);   // evicts first trade → VWAP = (2040 + 3030 + 1050) / 60 = 101.17... recalc
 ```
 
+</details>
+
 **Key point to say:** "I maintain running sums `sumPxQty` and `sumQty` and update them incrementally on each add/evict — O(1) per update instead of O(N) recomputation."
 
 ---
@@ -1820,6 +1851,9 @@ vwap.update(105.0, 10);   // evicts first trade → VWAP = (2040 + 3030 + 1050) 
 **Problem:** "Implement a rate limiter that allows at most N orders per second. Thread-safe."
 
 **What they test:** Time-windowed counting, CAS, practical thinking about exchange rules.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 // Simple sliding window counter (used in this project's RiskEngine)
@@ -1877,6 +1911,8 @@ public class TokenBucketRateLimiter {
 }
 ```
 
+</details>
+
 **When they ask "which is better":**
 → Token bucket: smoother pacing, no boundary burst. Exchange rate limits are typically measured per-second but checked continuously — token bucket matches that model better.
 
@@ -1887,6 +1923,9 @@ public class TokenBucketRateLimiter {
 **Problem:** "Implement a fixed-size LRU cache for the last N instrument prices. When full, evict the least recently used."
 
 **What they test:** `LinkedHashMap` knowledge, or ability to build doubly-linked list + HashMap.
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 // Clean solution using LinkedHashMap's built-in LRU mode
@@ -1920,6 +1959,8 @@ public class PriceCache {
 //   ConcurrentHashMap without eviction is usually fine
 ```
 
+</details>
+
 ---
 
 ### CATEGORY C — Basic Financial Calculations
@@ -1931,6 +1972,9 @@ public class PriceCache {
 #### Exercise 10 — Calculate P&L
 
 **Problem:** "Given a list of trades (buy/sell, qty, price), calculate the realized P&L and current position."
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class PnlCalculator {
@@ -1972,6 +2016,8 @@ public class PnlCalculator {
 //                   → position=50,  totalCost=550 (50 × 11.00)
 ```
 
+</details>
+
 **Key phrase:** "I'm using average cost (FIFO would be another option) — average cost is simpler and common for intraday trading books."
 
 ---
@@ -1979,6 +2025,9 @@ public class PnlCalculator {
 #### Exercise 11 — Detect a Crossed Market
 
 **Problem:** "Given a bid price and an ask price, detect if the market is crossed (invalid state) or locked (bid == ask)."
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class MarketStateChecker {
@@ -1998,11 +2047,16 @@ public class MarketStateChecker {
 }
 ```
 
+</details>
+
 ---
 
 #### Exercise 12 — Spread and Mid-Price
 
 **Problem:** "Given an order book, calculate: mid-price, spread, and spread in basis points."
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class MarketMetrics {
@@ -2030,11 +2084,16 @@ public class MarketMetrics {
 }
 ```
 
+</details>
+
 ---
 
 #### Exercise 13 — Notional Value and Position Limit Check
 
 **Problem:** "A trader wants to buy 500 shares of AAPL at $195.50. Check: (1) notional value, (2) whether it would breach the position limit of 10,000 shares, (3) total portfolio notional after the trade."
+
+<details>
+<summary>▶ Solution</summary>
 
 ```java
 public class RiskChecker {
@@ -2069,6 +2128,8 @@ public class RiskChecker {
     }
 }
 ```
+
+</details>
 
 ---
 
