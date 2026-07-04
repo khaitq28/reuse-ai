@@ -271,3 +271,161 @@ echo "Total : $TOTAL"
 </details>
 
 ---
+
+### Exercise 7 — sed: clean and transform a log file
+
+File: `errors.log` — format: `date;ip;level;message`
+
+Tasks in `ex7.sh`:
+1. Replace all `ERROR` with `[ERROR]`
+2. Print only lines from `2024-01-18`
+3. Remove the IP column visually (strip `;ip;` → `;`)
+4. Add prefix `LOGLINE: ` to every line
+
+**Key commands:** `s/old/new/g`, `-n /pattern/p`, `s/^/prefix/`
+
+<details>
+<summary>▶ Solution</summary>
+
+```bash
+#!/bin/bash
+LOG_FILE="errors.log"
+
+echo "=== 1. Replace ERROR with [ERROR] ==="
+sed 's/ERROR/[ERROR]/g' "$LOG_FILE"
+
+echo ""
+echo "=== 2. Show only lines from 2024-01-18 ==="
+sed -n '/^2024-01-18/p' "$LOG_FILE"
+
+echo ""
+echo "=== 3. Remove the IP column ==="
+sed 's/;[^;]*//' "$LOG_FILE"
+
+echo ""
+echo "=== 4. Add prefix LOGLINE: ==="
+sed 's/^/LOGLINE: /' "$LOG_FILE"
+```
+
+</details>
+
+---
+
+### Exercise 8 — sed: work with data.csv and users.csv
+
+Files: `data.csv` (`product;quantity;price`), `users.csv` (`name;role;status`)
+
+Tasks in `ex8.sh`:
+1. Print `data.csv` without the header line
+2. Replace `inactive` with `DISABLED` in `users.csv`
+3. Print only lines 2 to 4 of `data.csv` (line range)
+4. Delete all lines containing `viewer` from `users.csv`
+
+**Key commands:** `1d`, `s/old/new/`, `-n '2,4p'`, `/word/d`
+
+<details>
+<summary>▶ Solution</summary>
+
+```bash
+#!/bin/bash
+
+echo "=== 1. Without header ==="
+sed '1d' data.csv
+
+echo ""
+echo "=== 2. inactive → DISABLED ==="
+sed 's/inactive/DISABLED/' users.csv
+
+echo ""
+echo "=== 3. Lines 2 to 4 ==="
+sed -n '2,4p' data.csv
+
+echo ""
+echo "=== 4. Remove viewer lines ==="
+sed '/viewer/d' users.csv
+```
+
+</details>
+
+---
+
+### Exercise 9 — awk: extract columns and filter rows
+
+Files: `users.csv` (`name;role;status`), `data.csv` (`product;quantity;price`)
+
+Tasks in `ex9.sh`:
+1. Print only the name column from `users.csv` (skip header)
+2. Print name and status of `active` users
+3. Print products with quantity > 100
+4. Print each user as `User: <name> is <status>`
+
+**Key concepts:** `-F';'`, `NR > 1`, `$3 == "active"`, `$2 > 100`, `print "text", $1`
+
+<details>
+<summary>▶ Solution</summary>
+
+```bash
+#!/bin/bash
+
+echo "=== 1. Name column ==="
+awk -F';' 'NR > 1 { print $1 }' users.csv
+
+echo ""
+echo "=== 2. Active users ==="
+awk -F';' 'NR > 1 && $3 == "active" { print $1, $3 }' users.csv
+
+echo ""
+echo "=== 3. Products quantity > 100 ==="
+awk -F';' 'NR > 1 && $2 > 100 { print $1 }' data.csv
+
+echo ""
+echo "=== 4. User label ==="
+awk -F';' 'NR > 1 { print "User:", $1, "is", $3 }' users.csv
+```
+
+</details>
+
+---
+
+### Exercise 10 — awk: count, sum, and compute with BEGIN/END
+
+Files: `data.csv` (`product;quantity;price`), `users.csv` (`name;role;status`)
+
+Tasks in `ex10.sh`:
+1. Count total users (excluding header)
+2. Count how many users are `active`
+3. Total quantity of all products
+4. Find the most expensive product (highest price)
+5. Print a price list with a header using `BEGIN`
+
+**Key concepts:** `END { print NR }`, `count++`, `sum += $2`, `max` tracking, `BEGIN { print "header" }`, `printf`
+
+<details>
+<summary>▶ Solution</summary>
+
+```bash
+#!/bin/bash
+
+echo "=== 1. Total users ==="
+awk -F';' 'NR > 1 { count++ } END { print count }' users.csv
+
+echo ""
+echo "=== 2. Active users ==="
+awk -F';' '$3 == "active" { count++ } END { print count }' users.csv
+
+echo ""
+echo "=== 3. Total quantity ==="
+awk -F';' 'NR > 1 { sum += $2 } END { print "Total quantity:", sum }' data.csv
+
+echo ""
+echo "=== 4. Most expensive ==="
+awk -F';' 'NR > 1 && $3 > max { max = $3; name = $1 } END { print name, max }' data.csv
+
+echo ""
+echo "=== 5. Price list ==="
+awk -F';' 'BEGIN { print "=== Product Price List ===" } NR > 1 { printf "%-12s %s\n", $1, $3 }' data.csv
+```
+
+</details>
+
+---
