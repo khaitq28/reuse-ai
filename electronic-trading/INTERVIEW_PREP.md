@@ -1245,6 +1245,86 @@ For front office Java roles — even if you don't implement FIX, know what it is
 
 ---
 
+## What Was Added to This Project — and Why
+
+These components were added to make the project closer to a real front office system.
+Each one is a direct answer to an interview question.
+
+---
+
+### `util/ObjectPool.java` — Object Pooling
+- **What:** Generic pre-allocated object pool using a circular array + `AtomicInteger`
+- **Why in trading:** `new Order()` on every tick = constant Young Gen pressure = Minor GC every few seconds. A pool eliminates allocation entirely on the hot path
+- **Interview Q:** *"How do you reduce GC pressure on the hot path?"* → "I pre-allocate a pool of N objects at startup and reuse them — zero allocation at runtime"
+- **Key concept:** Power-of-2 sizing + bitwise `& mask` instead of `% size` — same trick as the Disruptor ring buffer
+- **Limitation to mention:** Simple ring — works for single-threaded OMS event loop. For multi-threaded: use `ManyToManyConcurrentArrayQueue` from Agrona
+
+---
+
+### `service/WarmupService.java` — JIT Warmup
+- **What:** `@PostConstruct` bean that replays 20,000 synthetic orders through the full hot path before market open
+- **Why in trading:** Without warmup, the first real orders run at interpreter speed (10–100× slower). JIT compilation on a live system causes latency spikes exactly at market open — the worst possible time
+- **Interview Q:** *"How do you ensure consistent latency from market open?"* → "We run a warmup phase before going live — synthetic traffic forces C2 Tier-4 compilation of all critical methods"
+- **Key concept:** Methods compile to Tier 4 after ~10,000 invocations (`-XX:CompileThreshold`). Warmup exercises every branch: BUY/SELL, LIMIT/MARKET, pass/fail risk checks
+
+---
+
+### `service/PositionService.java` — Real-Time P&L Tracking
+- **What:** Tracks net position, average cost, realized P&L, and unrealized (mark-to-market) P&L per symbol
+- **Why in trading:** Every trading system must know in real-time: "am I long or short, by how much, and what is my P&L?" — both for risk limits and for trader visibility
+- **Interview Q:** *"How do you calculate P&L in real-time?"* → "Average cost method (AVCO): on each buy, recalculate weighted average cost; on each sell, realize P&L = qty × (fill_price − avg_cost)"
+- **Key concept:** `totalRealizedPnlCents` stored as `AtomicLong` in integer cents — avoids floating-point race conditions on the accumulator
+- **MiFID II link:** Accurate real-time positions are required for transaction reporting and best execution proof
+
+---
+
+### `algo/TwapExecutor.java` — TWAP Execution Algorithm
+- **What:** Splits a large parent order into N equal child orders dispatched at fixed time intervals using `ScheduledExecutorService`
+- **Why in trading:** Sending 100,000 shares at once moves the market against you (market impact). TWAP minimises impact by blending into normal market flow over time
+- **Interview Q:** *"What execution algorithms have you worked with?"* or *"Implement a TWAP"*
+- **Key concept:** `scheduleAtFixedRate` vs `scheduleWithFixedDelay` — fixed-rate is correct here (we want slices at wall-clock intervals, not interval-after-completion)
+- **Production concern to mention:** "In production I'd add randomised timing (±10% jitter) so predatory HFT algorithms cannot detect and front-run the pattern"
+
+---
+
+### `service/AuditLogService.java` — Async Write-Behind Audit Log
+- **What:** OMS thread writes events to a `BlockingQueue` in ~100ns; a dedicated consumer thread persists them asynchronously
+- **Why in trading:** Database writes take milliseconds. Synchronous persistence would add milliseconds of latency to every order — completely unacceptable. The queue decouples the OMS from I/O
+- **Interview Q:** *"How do you persist trades without impacting latency?"* → "Write-behind: put a lightweight event on an in-memory queue (non-blocking), let a background thread do the I/O"
+- **Key concept:** `offer()` (non-blocking, drops if full) vs `put()` (blocking). Always use `offer()` on the hot path — the OMS thread must never block on persistence
+- **MiFID II link:** All orders and trades must be logged with nanosecond timestamps and retained 5 years — this service is the integration point for that obligation
+- **Production upgrade:** Replace `ArrayBlockingQueue` with Chronicle Queue — persisted, off-heap, zero GC, survives JVM crash
+
+---
+
+### `util/TradingThreadFactory.java` — Named Thread Factory
+- **What:** Creates threads with meaningful names, controlled daemon flags, set priority, and uncaught exception handlers
+- **Why in trading:** When diagnosing a latency spike with `jstack`, "pool-3-thread-7" tells you nothing. "order-processor-1" tells you exactly which component is stuck
+- **Interview Q:** *"How do you structure your threads in a trading system?"* → "Every thread pool uses a named factory. Hot-path threads are non-daemon with MAX_PRIORITY. Background workers are daemon with NORM_PRIORITY. All threads have an uncaught exception handler that alerts operations"
+- **Key concept:** `setUncaughtExceptionHandler` — a silent thread death in a trading system leaves orders unmanaged. You MUST log and alert on any unexpected thread termination
+- **Daemon flag rule:** Non-daemon = thread must finish before JVM exits (use for OMS, audit log — so they drain). Daemon = JVM can exit while thread is running (use for market data handlers, background monitors)
+
+---
+
+### `start-trading.sh` — Production JVM Startup Script
+- **What:** Shell script with all production JVM flags
+- **Why in trading:** JVM defaults are tuned for general-purpose applications, not ultra-low-latency trading. Every flag in this script exists to solve a specific trading problem
+- **Interview Q:** *"What JVM flags would you use for a trading system?"* — this script is the answer
+- **Key flags to memorise:**
+
+| Flag | Problem it solves |
+|---|---|
+| `-Xms == -Xmx` | Prevent heap resize GC pause during trading |
+| `-XX:+AlwaysPreTouch` | Pre-fault OS memory pages at startup — no page-fault latency at runtime |
+| `-XX:+UseZGC` | Sub-millisecond GC pauses (Java 15+) |
+| `-XX:+DisableExplicitGC` | Block library calls to `System.gc()` |
+| `-Xlog:gc*` | GC logging — essential for diagnosing latency spikes post-mortem |
+| `-XX:+HeapDumpOnOutOfMemoryError` | Capture heap state at the moment of OOM |
+| `-XX:StartFlightRecording` | Always-on JFR profiling for latency incident analysis |
+| `-XX:-RestrictContended` | Enable `@Contended` padding on custom classes |
+
+---
+
 ## Topics NOT in `ELECTRONIC_TRADING_JAVA.md` — Study These Too
 
 ### JMH — Java Microbenchmark Harness
