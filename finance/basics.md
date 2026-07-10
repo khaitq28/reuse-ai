@@ -905,3 +905,465 @@ FIX Protocol     → trading protocol (QuickFIX/J library)
 SWIFT            → payment and securities messages
 Murex / Calypso  → front-to-back platforms (you integrate with them)
 ```
+
+
+# -------- ADD MORE -----
+# Market Microstructure
+
+## Why should a Java developer learn this?
+
+Financial products are only one part of the picture.
+
+As a Java developer working in Front Office, Electronic Trading or Market Data, you also need to understand **how financial markets actually operate**.
+
+Market microstructure explains **where**, **how**, and **between whom** trades happen.
+
+Without this knowledge, concepts such as Order Book, Matching Engine, Market Data or FIX Protocol will be difficult to understand later.
+
+---
+
+## Exchange
+
+An Exchange is a centralized marketplace where buyers and sellers trade financial instruments.
+
+Examples:
+
+- Euronext
+- NYSE
+- NASDAQ
+- CME
+
+Characteristics:
+
+- Central Order Book
+- Transparent prices
+- Automatic matching
+- Regulated environment
+
+Examples of products:
+
+- Stocks
+- ETFs
+- Listed Futures
+- Listed Options
+
+---
+
+## OTC (Over-The-Counter)
+
+OTC means trades are negotiated directly between two counterparties instead of using an exchange.
+
+Characteristics:
+
+- No central order book
+- Negotiated prices
+- Flexible contracts
+
+Examples:
+
+- Bonds
+- FX Spot
+- FX Forward
+- Interest Rate Swaps
+- CDS
+
+---
+
+## Broker
+
+A Broker executes trades on behalf of clients.
+
+The broker does not own the product.
+
+Revenue comes from commissions.
+
+---
+
+## Dealer
+
+A Dealer trades using the bank's own inventory.
+
+The dealer may buy first and sell later.
+
+Revenue comes from bid/ask spread.
+
+---
+
+## Market Maker
+
+A Market Maker continuously provides both Buy and Sell prices.
+
+Example:
+
+BUY 99.90
+
+SELL 100.00
+
+Profit comes mainly from the spread.
+
+Market Makers increase market liquidity.
+
+---
+
+## Liquidity
+
+Liquidity measures how easy it is to buy or sell an asset without significantly moving the market price.
+
+High liquidity means:
+
+- many buyers
+- many sellers
+- small spread
+- fast execution
+
+---
+
+## Bid / Ask
+
+Bid:
+Highest price buyers are willing to pay.
+
+Ask:
+Lowest price sellers are willing to accept.
+
+Example:
+
+Bid = 99.90
+
+Ask = 100.00
+
+Spread = 0.10
+
+---
+
+## Market Order
+
+A Market Order executes immediately using the best available price.
+
+Advantages:
+
+- Immediate execution
+
+Disadvantages:
+
+- Price is not guaranteed
+
+---
+
+## Limit Order
+
+A Limit Order specifies the maximum buying price or minimum selling price.
+
+Advantages:
+
+- Price control
+
+Disadvantages:
+
+- Execution is not guaranteed
+
+---
+
+## RFQ (Request For Quote)
+
+Instead of placing orders into a central order book, a client asks one or several dealers for a price.
+
+Workflow:
+
+Client
+→ Request Quote
+→ Dealers respond
+→ Client accepts one quote
+→ Trade executed
+
+RFQ is common for:
+
+- Bonds
+- Interest Rate Swaps
+- FX
+
+---
+
+## Summary
+
+Understanding market microstructure is the foundation before learning Electronic Trading.
+
+Next step:
+
+- Order Lifecycle
+- OMS
+- Market Data
+- Matching Engine
+
+
+## MORE
+# Market Participants
+
+Understanding who participates in financial markets helps explain why trading systems exist.
+
+## Retail Investor
+
+Individual investors using brokers.
+
+Examples:
+
+- Buying stocks
+- ETFs
+- Mutual funds
+
+---
+
+## Institutional Investor
+
+Large organizations investing significant amounts.
+
+Examples:
+
+- Pension funds
+- Insurance companies
+- Mutual funds
+- Asset managers
+
+---
+
+## Investment Bank
+
+Provides trading services, market making, financing and advisory.
+
+Examples:
+
+- BNP Paribas
+- Citi
+- J.P. Morgan
+- Société Générale
+
+---
+
+## Asset Manager
+
+Manages investments on behalf of clients.
+
+Goal:
+
+Generate returns while managing risk.
+
+---
+
+## Hedge Fund
+
+Professional investment firms using advanced strategies.
+
+Examples:
+
+- Arbitrage
+- Macro
+- Quantitative
+- Long/Short
+
+---
+
+## Exchange
+
+Provides a regulated marketplace where buyers and sellers meet.
+
+---
+
+## Clearing House
+
+Guarantees that trades are correctly settled.
+
+Reduces counterparty risk.
+
+---
+
+## Custodian
+
+Safely holds financial assets for clients.
+
+---
+
+## Regulator
+
+Ensures markets remain fair and transparent.
+
+Examples:
+
+- AMF (France)
+- FCA (UK)
+- SEC (US)
+
+## TRADE lifecycle
+# Trade Lifecycle
+
+A trade does not end when a trader clicks the Buy button.
+
+Many business processes happen afterwards.
+
+## Step 1 — Order
+
+The trader submits an order.
+
+Examples:
+
+- Buy
+- Sell
+
+---
+
+## Step 2 — Execution
+
+The order is matched or negotiated.
+
+Execution confirms that both parties agree on the trade.
+
+---
+
+## Step 3 — Trade
+
+A trade is now officially created.
+
+The trade contains:
+
+- instrument
+- quantity
+- price
+- counterparties
+
+---
+
+## Step 4 — Confirmation
+
+Both parties verify trade details.
+
+---
+
+## Step 5 — Clearing
+
+The clearing house guarantees both sides will fulfill their obligations.
+
+---
+
+## Step 6 — Settlement
+
+Cash and securities are exchanged.
+
+Examples:
+
+T+1
+
+T+2
+
+---
+
+## Step 7 — Position Update
+
+The institution updates its holdings.
+
+---
+
+## Step 8 — Accounting & Reporting
+
+Trade information is recorded for accounting, risk management and regulatory reporting.
+
+---
+
+## Why does this matter for Java developers?
+
+Many banking applications do NOT perform trading.
+
+Instead, they support one stage of this lifecycle:
+
+- Trade Capture
+- Settlement
+- Position Management
+- Risk
+- Accounting
+- Regulatory Reporting
+
+
+# VOCAC
+# Financial Vocabulary
+
+| Term | Meaning |
+|------|---------|
+| Trade | Executed transaction |
+| Order | Trading instruction |
+| Position | Current holdings |
+| Exposure | Financial risk |
+| Counterparty | The other party in a trade |
+| Notional | Contract reference amount |
+| Coupon | Bond interest payment |
+| Yield | Bond return |
+| Spread | Difference between Bid and Ask |
+| Liquidity | Ease of buying/selling |
+| Settlement | Exchange of cash and securities |
+| Booking | Recording the trade |
+| Execution | Completing the trade |
+| Market Maker | Provides Bid and Ask prices |
+| Dealer | Trades using own inventory |
+| Broker | Executes on behalf of clients |
+| Venue | Place where trading occurs |
+| Quote | Proposed trading price |
+| RFQ | Request For Quote |
+| Mark-to-Market | Daily market valuation |
+
+
+
+# Java Developer Cheat Sheet
+
+When working in investment banking, you usually do NOT implement financial mathematics.
+
+Instead, you build business applications around financial products.
+
+Examples:
+
+| Business Domain | Typical Java Applications |
+|-----------------|--------------------------|
+| Bonds | Trade Capture, Settlement, Reporting |
+| FX | Trading Platform, Position, Risk |
+| Interest Rate Swaps | Trade Capture, Confirmation, Collateral |
+| Equities | OMS, Market Data, Position |
+| Futures | Trading Platform, Clearing |
+| Options | Risk, Pricing Integration |
+
+As a Java developer, your goal is to understand:
+
+- what is being traded
+- who is trading
+- how trades flow through the organization
+
+The implementation of electronic trading systems (OMS, FIX, Market Data, Matching Engine) will be covered in the next module.
+
+
+
+## What you should know before learning Electronic Trading
+
+✓ Trade vs Order
+
+✓ Position
+
+✓ Exposure
+
+✓ Settlement
+
+✓ OTC vs Exchange
+
+✓ Market Maker
+
+✓ Dealer vs Broker
+
+✓ RFQ
+
+✓ Liquidity
+
+✓ Bid / Ask
+
+✓ Bond
+
+✓ FX
+
+✓ IRS
+
+✓ Futures
+
+✓ Trade Lifecycle
