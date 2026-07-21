@@ -374,3 +374,290 @@ Writing code that works *with* the hardware, not against it. The mindset that di
 4. What is **memory-mapped I/O**? Why do some trading systems use it for market data?
 5. Why does an order book built on an `ArrayList<Order>` at a given price level have better cache behavior than `LinkedList<Order>`?
 6. What is the **LMAX Disruptor**? What hardware-level optimizations does it exploit?
+
+
+
+---
+
+## 5. Coding Problems — Code Review
+
+> Mỗi bài là một đoạn code thực tế từ trading system. Tìm bug, giải thích tại sao, và đề xuất fix.
+
+---
+
+### Bài 1 — Thread-safe Price Cache
+
+**Context**
+
+- Một service nhận giá chứng khoán từ nhiều nguồn khác nhau
+- Mỗi giây có khoảng 20.000 price update
+- Nhiều thread cùng gọi `update()` và `getPrice()`
+- Khách hàng thỉnh thoảng nhận được giá cũ hoặc `NullPointerException`
+
+**Review đoạn code sau:**
+
+```java
+public class PriceCache {
+
+    private final Map<String, Double> prices = new HashMap<>();
+
+    public void update(String symbol, double price) {
+        prices.put(symbol, price);
+    }
+
+    public Double getPrice(String symbol) {
+        return prices.get(symbol);
+    }
+}
+```
+
+---
+
+### Bài 2 — Latest Price Only
+
+**Context**
+
+Hai feed gửi cùng một symbol nhưng đến theo thứ tự không đảm bảo do network delay:
+
+```
+Feed A  →  AAPL  seq=100  price=189
+Feed B  →  AAPL  seq=98   price=187   ← message cũ có thể đến SAU
+```
+
+**Yêu cầu:**
+
+- Luôn giữ giá mới nhất (seq cao nhất)
+- Update cũ phải bị bỏ qua
+- Nhiều thread update đồng thời
+
+**Code hiện tại:**
+
+```java
+public class PriceBook {
+
+    private final ConcurrentHashMap<String, Price> prices =
+            new ConcurrentHashMap<>();
+
+    public void update(Price p) {
+        Price current = prices.get(p.getSymbol());
+
+        if (current == null || p.getSequence() > current.getSequence()) {
+            prices.put(p.getSymbol(), p);
+        }
+    }
+}
+```
+
+---
+
+### Bài 3 — Producer Consumer
+
+**Context**
+
+- Trading Gateway nhận message từ FIX
+- Producer đọc socket
+- Consumer ghi database
+- System chạy khoảng **8 Producer** và **6 Consumer**
+- Thỉnh thoảng mất message
+
+**Code hiện tại:**
+
+```java
+public class MessageProcessor {
+
+    private final Queue<Message> queue = new LinkedList<>();
+
+    public void receive(Message msg) {
+        queue.add(msg);
+    }
+
+    public Message next() {
+        return queue.poll();
+    }
+}
+```
+
+---
+
+### Bài 4 — ExecutorService
+
+**Context**
+
+- Service cần gọi đồng thời 5 market providers
+- Mỗi provider mất khoảng 100–500ms
+- Sau vài ngày production: server bắt đầu hết thread, khách hàng timeout
+
+**Code hiện tại:**
+
+```java
+ExecutorService executor = Executors.newFixedThreadPool(5);
+
+List<Future<Price>> futures = new ArrayList<>();
+
+for (Provider provider : providers) {
+    futures.add(executor.submit(() -> provider.getPrice(symbol)));
+}
+
+List<Price> prices = new ArrayList<>();
+
+for (Future<Price> future : futures) {
+    prices.add(future.get());
+}
+```
+
+---
+
+### Bài 5 — CompletableFuture
+
+**Context**
+
+- Có 3 service độc lập: `Market`, `Risk`, `Inventory`
+- Developer muốn gọi song song để giảm latency
+- System chạy đúng, nhưng latency rất cao
+
+**Code hiện tại:**
+
+```java
+CompletableFuture<Market> market =
+        CompletableFuture.supplyAsync(() -> marketService.load());
+
+CompletableFuture<Risk> risk =
+        CompletableFuture.supplyAsync(() -> riskService.load());
+
+CompletableFuture<Inventory> inventory =
+        CompletableFuture.supplyAsync(() -> inventoryService.load());
+
+Portfolio portfolio = new Portfolio(
+        market.get(),
+        risk.get(),
+        inventory.get());
+```
+
+---
+
+### Bài 6 — Counter
+
+**Context**
+
+- Trading Engine cần thống kê số order mỗi giây
+- Service chạy khoảng **32 threads**, **300.000 orders/sec**
+
+**Code hiện tại:**
+
+```java
+public class OrderCounter {
+
+    private long count = 0;
+
+    public void increment() {
+        count++;
+    }
+
+    public long value() {
+        return count;
+    }
+}
+```
+
+---
+
+### Bài 7 — Memory Leak
+
+**Context**
+
+- Application chạy khoảng 2 ngày thì Full GC liên tục
+- Heap dump cho thấy hàng triệu object
+
+**Code hiện tại:**
+
+```java
+public class InstrumentCache {
+
+    private final Map<String, Instrument> cache = new ConcurrentHashMap<>();
+
+    public Instrument get(String isin) {
+        Instrument instrument = cache.get(isin);
+
+        if (instrument == null) {
+            instrument = repository.load(isin);
+            cache.put(isin, instrument);
+        }
+
+        return instrument;
+    }
+}
+```
+
+---
+
+### Bài 8 — Synchronization
+
+**Context**
+
+- Developer muốn thread-safe cho `PositionService`
+- System chạy đúng
+- Nhưng CPU chỉ khoảng 20% và latency tăng gấp đôi
+
+**Code hiện tại:**
+
+```java
+public class PositionService {
+
+    private final Map<String, Position> positions = new HashMap<>();
+
+    public synchronized void update(Position position) {
+        positions.put(position.getSymbol(), position);
+    }
+
+    public synchronized Position get(String symbol) {
+        return positions.get(symbol);
+    }
+}
+```
+
+---
+
+### Bài 9 — Allocation
+
+**Context**
+
+- Method dưới đây được gọi khoảng **10 triệu lần / phút**
+- Khách hàng báo GC tăng và latency tăng
+
+**Code hiện tại:**
+
+```java
+public String buildKey(Order order) {
+    return order.getTrader()
+            + "-"
+            + order.getDesk()
+            + "-"
+            + order.getInstrument()
+            + "-"
+            + order.getId();
+}
+```
+
+---
+
+### Bài 10 — Hot Loop
+
+**Context**
+
+- Matching Engine liên tục duyệt order book
+- Method này được gọi **hàng triệu lần mỗi giây**
+
+**Code hiện tại:**
+
+```java
+public Order findOrder(List<Order> orders, long id) {
+
+    for (Order order : orders) {
+        if (order.getId() == id) {
+            return order;
+        }
+    }
+
+    return null;
+}
+```
