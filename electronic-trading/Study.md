@@ -20,6 +20,7 @@
   - [ThreadPoolExecutor](#threadpoolexecutor)
   - [CompletableFuture](#completablefuture)
   - [BlockingQueue](#blockingqueue)
+  - [Virtual Threads — Java 21](#virtual-threads--java-21)
 - [3. JVM Internals](#3-jvm-internals)
   - [Object Allocation](#object-allocation)
   - [Garbage Collection](#garbage-collection)
@@ -32,6 +33,18 @@
   - [False Sharing](#false-sharing)
   - [Lock Contention](#lock-contention)
   - [Mechanical Sympathy](#mechanical-sympathy)
+  - [LMAX Disruptor](#lmax-disruptor)
+- [5. Netty & NIO](#5-netty--nio)
+  - [Java NIO](#java-nio)
+  - [Netty Architecture](#netty-architecture)
+  - [Netty in Trading](#netty-in-trading)
+- [6. System Design](#6-system-design)
+  - [Order Book](#order-book)
+  - [Market Data Fan-Out](#market-data-fan-out)
+  - [Rate Limiter](#rate-limiter)
+  - [Position Service](#position-service)
+  - [FIX Gateway](#fix-gateway)
+- [7. Coding Problems — Code Review](#7-coding-problems--code-review)
 
 ---
 
@@ -207,6 +220,21 @@ The classic inter-thread communication mechanism. Used in order pipelines, marke
 
 ---
 
+### Virtual Threads — Java 21
+
+> Java 21 virtual threads are appearing in interviews for any Java 17+ trading stack. Know when they help and — critically — when they do **not**.
+
+**Interview Questions**
+
+1. What is a virtual thread? How does it differ from a platform (OS) thread?
+2. Virtual threads are cheap — does that mean you should use them for CPU-bound order matching? Why or why not?
+3. What is **thread pinning** in the context of virtual threads? When does it happen and why is it dangerous?
+4. When would you choose `Executors.newVirtualThreadPerTaskExecutor()` over a fixed thread pool in a trading backend?
+5. `CompletableFuture.supplyAsync()` without an explicit executor uses the **common ForkJoinPool**. What happens when all ForkJoinPool threads are blocked on IO? How do virtual threads change this?
+6. Are virtual threads a replacement for reactive programming (e.g., Reactor/WebFlux) in a trading service?
+
+---
+
 ## 3. JVM Internals
 
 > In trading, a GC pause of 50ms can mean missed opportunities worth millions. JVM knowledge is non-negotiable.
@@ -379,7 +407,192 @@ Writing code that works *with* the hardware, not against it. The mindset that di
 
 ---
 
-## 5. Coding Problems — Code Review
+### LMAX Disruptor
+
+> If you are interviewing for an electronic trading position, you **will** be asked about the Disruptor. It is the standard for inter-thread messaging in low-latency Java systems (used at LMAX, banks, HFT firms).
+
+**Interview Questions**
+
+1. What problem does the Disruptor solve that `BlockingQueue` cannot? What is the core performance difference?
+2. What is a **ring buffer**? Why must its size be a **power of 2**? What trick does this enable?
+3. What is a **sequence**? What is a **sequence barrier**? How does a consumer know when a slot is ready to read?
+4. What are **wait strategies**? Compare `BusySpinWaitStrategy`, `YieldingWaitStrategy`, and `BlockingWaitStrategy` — when do you use each in a trading system?
+5. How does the Disruptor eliminate false sharing between the producer sequence and consumer sequence?
+6. How do you set up a **pipeline** (A → B → C) vs **parallel handlers** (A → B and A → C simultaneously) in a Disruptor?
+
+---
+
+## 5. Netty & NIO
+
+> Every FIX engine, market data gateway, and low-latency trading server in Paris is built on Netty or raw NIO. Non-negotiable for CIB and HFT interviews.
+
+---
+
+### Java NIO
+
+Java NIO (New I/O) is the foundation of all non-blocking networking in Java. Understand why it exists before learning Netty.
+
+**Interview Questions**
+
+1. What is the difference between **blocking I/O** (java.io) and **non-blocking I/O** (java.nio)? Why does it matter for a trading gateway handling 10,000 connections?
+2. What are the three core abstractions of Java NIO? Explain **Channel**, **Buffer**, and **Selector** in one sentence each.
+3. How does a `Selector` work? Walk through the event loop: register → select → iterate keys → handle.
+4. What is the difference between `ByteBuffer.allocate()` and `ByteBuffer.allocateDirect()`? Why does a market data parser prefer direct buffers?
+5. What is **zero-copy**? How does `FileChannel.transferTo()` exploit it, and where would you use it in a trading system?
+6. What is the difference between `flip()`, `compact()`, and `clear()` on a `ByteBuffer`? What happens if you forget `flip()` before reading?
+
+---
+
+### Netty Architecture
+
+Netty wraps Java NIO with a production-ready, pipeline-based architecture. Know it at the component level.
+
+**Interview Questions**
+
+1. What is an **EventLoop** in Netty? How many threads does one `NioEventLoopGroup` use by default?
+2. What is a **Channel Pipeline**? How do `ChannelInboundHandler` and `ChannelOutboundHandler` differ?
+3. What is a **ByteBuf**? How does it differ from `ByteBuffer`? What is reference counting and why does Netty need it?
+4. What is the difference between `ChannelHandlerContext.write()` and `ChannelHandlerContext.writeAndFlush()`? What is the cost of calling `flush()` too often?
+5. What is `@Sharable` on a `ChannelHandler`? What is the risk if a non-sharable handler is shared across channels?
+6. What is the **boss / worker group** pattern in a Netty server? What does each group do?
+
+---
+
+### Netty in Trading
+
+How Netty is actually used in front office systems — the level interviewers expect.
+
+**Interview Questions**
+
+1. A FIX engine receives messages over TCP. How would you structure the Netty pipeline to: (a) frame FIX messages by delimiter, (b) decode bytes to a FIX object, (c) dispatch to an OMS handler?
+2. What is a **codec** in Netty? What is the difference between `ByteToMessageDecoder` and `MessageToByteEncoder`?
+3. How do you handle **slow consumers** in a Netty server? What happens if a client cannot read fast enough and the write buffer fills up?
+4. What is `ChannelOption.TCP_NODELAY`? Why must it be enabled on every trading connection?
+5. How would you implement **heartbeat / session timeout** detection in a Netty FIX gateway?
+6. What is the performance difference between `NioEventLoopGroup` and `EpollEventLoopGroup`? When would you use Epoll in a Paris trading server?
+
+---
+
+## 6. System Design
+
+> Every senior Java interview in front office includes at least one system design question. These are open-ended — there is no single correct answer. The goal is to show structured thinking, awareness of trade-offs, and trading-specific constraints (latency, ordering, exactly-once).
+
+**How to answer:** always start with **requirements** (throughput, latency target, consistency), then **data model**, then **concurrency strategy**, then **failure handling**.
+
+---
+
+### Real Interview Questions — as asked in Paris CIB / HFT interviews
+
+> These are verbatim-style questions collected from front office interviews. Each maps to a design problem below.
+
+**Order Book**
+- *"Design a thread-safe in-memory order book that handles 1 million order updates per second."*
+- *"How would you implement an order book in Java? Walk me through your data structures."*
+- *"Your matching engine has p99 latency of 500µs. Production target is 100µs. What do you change?"*
+
+**Market Data**
+- *"Design a market data distribution system that fans out to 200 consumers with no slow-consumer impact."*
+- *"We receive 2M price ticks per second. How do you distribute them to downstream services without dropping data?"*
+- *"How would you build a last-value cache for market data that is safe for concurrent readers?"*
+
+**Rate Limiter**
+- *"Implement a rate limiter: 1,000 orders per second per client. It must add less than 1 microsecond of overhead."*
+- *"How do you prevent a single client from flooding your trading gateway?"*
+- *"Your rate limiter is deployed across 10 instances. How do you enforce a global limit?"*
+
+**Position / Risk**
+- *"Design a real-time position tracker. 50 desks, 200 fills per second each. Risk reads every 10ms."*
+- *"How do you ensure a fill is never counted twice if your service crashes and restarts?"*
+- *"A fill arrives out of order due to network reordering. How does your position service handle it?"*
+
+**FIX Gateway**
+- *"Design a FIX gateway in Java. 50 buy-side clients, 100,000 messages per second inbound."*
+- *"How do you parse FIX messages at high throughput without allocating objects on the hot path?"*
+- *"A client reconnects after a disconnect with a sequence number gap. What does your gateway do?"*
+
+**General / Surprise questions**
+- *"You have a shared `HashMap` accessed by 16 threads. Production is throwing `ConcurrentModificationException`. What do you do — walk me through your investigation."*
+- *"We have a service that works perfectly in staging but shows 10x higher latency in production. How do you diagnose it?"*
+- *"Design a thread-safe object pool for `Order` objects to eliminate GC pressure on the hot path."*
+
+---
+
+### Order Book
+
+**Interview question:** *"Design a thread-safe in-memory order book for a single instrument. It must support add, cancel, and match at 1M messages/sec with p99 latency under 100µs."*
+
+**Questions to drive your answer:**
+
+1. What data structure do you use for the bid side and ask side? (`TreeMap<Price, Queue<Order>>` — why? what are the trade-offs vs array-based approaches?)
+2. How do you handle concurrency? Single-threaded with Disruptor? `ReentrantReadWriteLock`? Why does a single writer thread outperform locking at this throughput?
+3. How do you implement **price-time priority** (FIFO at each price level)?
+4. What does a match produce? How do you notify the OMS of a fill without blocking the matching thread?
+5. How do you handle **cancel** efficiently? (hint: O(1) cancellation requires a `HashMap<orderId, Order>` alongside the price-level structure)
+6. How would you **benchmark** this — what metrics, what tools?
+
+---
+
+### Market Data Fan-Out
+
+**Interview question:** *"Design a market data distribution system. A feed delivers 2M price updates/sec. Fan out to 200 subscriber services. No subscriber must be able to slow down the feed."*
+
+**Questions to drive your answer:**
+
+1. One thread per subscriber vs. Disruptor with multiple consumers — which scales better and why?
+2. How do you ensure **no subscriber blocks the feed** if it is slow? (hint: bounded queue, drop policy, or back-pressure)
+3. How do you handle subscribers at different speeds? Should a slow analytics consumer affect a fast risk consumer?
+4. What is a **multicast** approach? When would you use UDP multicast instead of TCP for this?
+5. How do you measure fan-out latency per subscriber? What is the right tool?
+6. What happens if a subscriber dies — how does the system detect and recover?
+
+---
+
+### Rate Limiter
+
+**Interview question:** *"Implement a rate limiter for a trading API gateway: max 1,000 orders/sec per client. The check must add less than 1µs of latency. It runs on 10 gateway instances."*
+
+**Questions to drive your answer:**
+
+1. **Token bucket** vs **sliding window** vs **fixed window** — explain each. Which do you choose for a trading API and why?
+2. How do you implement a token bucket with `AtomicLong` and CAS — no locks?
+3. How do you handle **burst** — a client sending 500 orders in 1ms then nothing for 999ms? Should it be allowed?
+4. If the rate limiter must be distributed (shared across 10 gateway instances), what changes? (hint: Redis INCR, Lua script for atomicity)
+5. How do you test that the rate limiter is accurate under 32 concurrent threads?
+6. What is the difference between **reject** and **queue** strategies when the limit is exceeded? Which is correct for a trading gateway?
+
+---
+
+### Position Service
+
+**Interview question:** *"Design a real-time position tracking service. 50 trading desks send 200 fills/sec each. A downstream risk engine reads current positions every 10ms. The service must survive restarts without losing state."*
+
+**Questions to drive your answer:**
+
+1. What is the data model? `Map<Desk, Map<Instrument, Position>>` — what are the concurrency requirements per cell?
+2. `ConcurrentHashMap` with `compute()` vs `ReentrantReadWriteLock` vs single-writer thread — compare for this use case.
+3. How do you ensure a fill is **never double-counted** if the service restarts mid-stream? (hint: sequence numbers, idempotent apply)
+4. How do you snapshot positions for end-of-day reconciliation without blocking live updates?
+5. Downstream risk polls every 10ms. Is polling the right pattern? What is the alternative and its trade-off?
+6. How do you handle a fill arriving **out of order** (network reorder, replay scenario)?
+
+---
+
+### FIX Gateway
+
+**Interview question:** *"Design a FIX gateway in Java. It accepts NewOrderSingle messages from 50 buy-side clients at 100,000 msg/sec total, and routes them to an internal OMS. It must handle client disconnects and reconnects with sequence number recovery."*
+
+**Questions to drive your answer:**
+
+1. How many Netty threads do you need? What does the boss group do vs the worker group?
+2. How do you parse a FIX message efficiently — avoid `String.split()` at 100,000 msg/sec?
+3. How do you guarantee **message ordering** per client session while processing sessions in parallel?
+4. What happens if the OMS is down — do you reject, queue, or replay? What does FIX protocol say about this?
+5. How do you handle a client that reconnects with a sequence number gap? (FIX session recovery — ResendRequest)
+6. What is your **monitoring** strategy — what metrics do you expose, what alerts do you set?
+
+---
+
+## 7. Coding Problems — Code Review
 
 > Mỗi bài là một đoạn code thực tế từ trading system. Tìm bug, giải thích tại sao, và đề xuất fix.
 
@@ -514,6 +727,7 @@ for (Future<Price> future : futures) {
 - Có 3 service độc lập: `Market`, `Risk`, `Inventory`
 - Developer muốn gọi song song để giảm latency
 - System chạy đúng, nhưng latency rất cao
+- Dưới load cao (100+ concurrent requests), latency đột ngột tăng gấp 10x
 
 **Code hiện tại:**
 
@@ -532,6 +746,8 @@ Portfolio portfolio = new Portfolio(
         risk.get(),
         inventory.get());
 ```
+
+> **Hint:** có 2 bug độc lập. Bug 1 liên quan đến cách combine kết quả. Bug 2 liên quan đến thread pool mà `supplyAsync()` dùng khi không có explicit executor.
 
 ---
 
@@ -638,6 +854,8 @@ public String buildKey(Order order) {
 }
 ```
 
+> **Câu hỏi thêm:** Fix với `StringBuilder` có đủ không? Nếu vẫn không đủ (zero-GC requirement), production trading system sẽ làm gì khác — gợi ý: nghĩ về key như một `byte[]` pre-allocated, hoặc dùng `long` composite key.
+
 ---
 
 ### Bài 10 — Hot Loop
@@ -661,3 +879,39 @@ public Order findOrder(List<Order> orders, long id) {
     return null;
 }
 ```
+
+---
+
+### Bài 11 — ThreadLocal Memory Leak
+
+**Context**
+
+- Trading Gateway xử lý mỗi request trên một thread từ thread pool
+- Developer dùng `ThreadLocal` để lưu correlation ID theo từng request
+- Sau vài giờ: heap tăng liên tục, GC không giải phóng được, heap dump có hàng trăm nghìn object lạ
+
+**Code hiện tại:**
+
+```java
+public class RequestContext {
+
+    private static final ThreadLocal<String> correlationId = new ThreadLocal<>();
+
+    public static void set(String id) {
+        correlationId.set(id);
+    }
+
+    public static String get() {
+        return correlationId.get();
+    }
+}
+
+// Trong filter / handler:
+public void handleRequest(Request req) {
+    RequestContext.set(req.getCorrelationId());
+    processOrder(req);
+    // ... không có cleanup
+}
+```
+
+> **Câu hỏi thêm:** Tại sao `ThreadLocal` gây memory leak trong thread pool nhưng KHÔNG gây leak nếu mỗi request dùng một thread riêng (per-request thread model)?
